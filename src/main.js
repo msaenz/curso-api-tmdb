@@ -9,7 +9,20 @@ const api = axios.create({
 })
 
 // Utils
-function createMovies(movies, container) {
+
+const lazyLoader = new IntersectionObserver((entries) => {
+  console.log(`Observando ${entries}`)
+  entries.forEach((entry) => {
+    console.log(entry.isIntersecting)
+    if (entry.isIntersecting) {
+      const url = entry.target.getAttribute('data-img')
+      console.log(`url${url}`)
+      entry.target.setAttribute('src',url)
+    }
+  })
+})
+
+function createMovies(movies, container, lazyLoad = false) {
   container.innerHTML = ''
 
   movies.forEach(movie => {
@@ -19,9 +32,16 @@ function createMovies(movies, container) {
       location.hash = `#movie=${movie.id}`
     })
     const movieImg = document.createElement('img')
-    movieContainer.classList.add('movie-img')
+    movieImg.classList.add('movie-img')
     movieImg.setAttribute('alt', movie.title)
-    movieImg.setAttribute('src', `https://image.tmdb.org/t/p/w300${movie.poster_path}`)
+    movieImg.setAttribute(
+      lazyLoad ? 'data-img' : 'src',
+      `https://image.tmdb.org/t/p/w300${movie.poster_path}`
+    )
+    if (lazyLoad) {
+      lazyLoader.observe(movieImg)
+    }
+
     movieContainer.appendChild(movieImg)
     container.appendChild(movieContainer)
   });
@@ -57,7 +77,7 @@ async function getTrendingMoviesPreview() {
 
   const { data }= await api('trending/movie/day')
   const movies = data.results
-  createMovies(movies, trendingMoviesPreviewList)
+  createMovies(movies, trendingMoviesPreviewList, true)
 }
 
 async function getCategoriesPreview() {
